@@ -12,8 +12,6 @@ class Node:
         self.g = g
         self.h = h
         self.f = f
-        # this direction attribute is for me to see which direction that check is using
-        # will be removed later
         self.direction = direction
         return
 # initializes the positions of start and end
@@ -48,22 +46,21 @@ def begin(gridworld, startx, starty, endx, endy):
     j = endy
     # intial g cost
     g = 0
-    # list of top
+    # list of minimum f values in open list excluding the popped node
     openMinFCost = []
     openheap = []
     closedlist = []
     moves = [] # list of x,y moves that agents moves
     counter = 0
 
-
-
-    openheap.extend(checkneighbors(x, y, gridworld, i, j, g, closedlist))
+    openheap.extend(checkneighbors(x, y, gridworld, i, j, g))
     updateMentalWorld(openheap, mentalworld, x, y)
-    closedlist.append({x, y})
+    h = abs(x - 1) + abs(y - j)
+    closedlist.append(Node(x, y, g, h, g + h, "start"))
 
-    while counter < 10:
+    while counter < 15:
         openheap = sorted(openheap, key = operator.attrgetter('f'))
-        if len(openheap) > 1 :
+        if len(openheap) > 1:
             nodePopped = openheap.pop(0)
             minf = nodePopped.f
             # find min f cost nodes
@@ -93,8 +90,46 @@ def begin(gridworld, startx, starty, endx, endy):
             t = 0
             break
         openMinFCost.clear()
-        openheap.extend(checkneighbors(x, y, mentalworld, i, j, g, closedlist))
+        openheap.extend(checkneighbors(x, y, mentalworld, i, j, g))
         counter += 1
+
+def computepath(openheap, closedlist, mentalworld, start, end):
+    openMinFCost = []
+    counter = 0
+    while openheap:
+        # Looking for min F values then min H values if tied F values (3)
+        for it in range(len(openheap)):
+            # if there are ties for f cost
+            if len(openheap) > 1 and openheap[0].f == openheap[it].f:
+                openMinFCost.append(openheap[it])
+            else:
+                break
+        openMinFCostn = sorted(openMinFCost, key=operator.attrgetter('h'))
+        if len(openMinFCost) > 1:
+            node = openMinFCost.pop(0)
+            for it in range(len(openheap)):
+                if node == openheap[it]:
+                    openheap.pop(it)
+                    break
+        else:
+            node = openheap.pop(0)
+        # Add to closelist (4)
+        closedlist.insert(0,node)
+        if node.x == end.x and node.y == end.y:
+            print("found")
+            return closedlist
+            break
+        # Check Neighbors(5)
+        potentialneighbors = checkneighbors(node.x, node.y, mentalworld, end.x, end.y, node.g)
+        # (12)
+        for i in len(potentialneighbors):
+            for j in len(openheap):
+                if potentialneighbors[i].x == openheap[j].x and potentialneighbors[i].y == openheap[j].y:
+                    if potentialneighbors[i].g < openheap[j]:
+                        openheap.pop(j)
+                    else:
+                        potentialneighbors.pop()
+
 
 
 
@@ -104,7 +139,7 @@ def begin(gridworld, startx, starty, endx, endy):
 # if there's a tie then resort to h value (not done)
 # if there's a tie then random (not done)
 # if all directions are impassable (not done)   perhaps return no value
-def checkneighbors(x,y,a,i,j,g, closedlist):
+def checkneighbors(x,y,a,i,j,g):
     neighbors = []
     # check up
     if x != 0 and a[x-1][y] != 1:
@@ -128,11 +163,14 @@ def checkneighbors(x,y,a,i,j,g, closedlist):
         neighbors.append(Node(x,y+1,g + 1,h,f,"right"))
     c = len(neighbors)
     return neighbors
+
+# this method populates the mental world with 1s
 def updateMentalWorld(neighbors, mentalworld, x, y):
     seen = ["up", "down", "left", "right"]
     encompass = []
     for i in range(len(neighbors)):
         encompass.append(neighbors[i].direction)
+
     new_list = list(set(seen) - set(encompass))
     print(new_list)
     if 'up' in new_list and x != 0:
@@ -144,8 +182,8 @@ def updateMentalWorld(neighbors, mentalworld, x, y):
     if 'right' in new_list and y != 9:
         mentalworld[x][y + 1] = 1
     print(mentalworld)
+
 begin(gridworld,startrow, startcolumn, endrow, endcolumn)
 
-print(sorted(list))
 
-#checkneighbors(startrow,startcolumn,a,endrow,endcolumn,1)
+
