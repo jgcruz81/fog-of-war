@@ -1,6 +1,7 @@
 import numpy as num
 from numpy import zeros
 import random
+import math
 from operator import attrgetter
 import operator
 from heapq import heappush, heappop
@@ -39,11 +40,6 @@ def begin(gridworld, startx, starty, endx, endy):
     mentalworld[endrow][endcolumn] = 3
     # t is for a truth value for while loop
     # x y is for starting positions i j is for end position
-    t = 1
-    x = startx
-    y = starty
-    i = endx
-    j = endy
     # intial g cost
     g = 0
     # list of minimum f values in open list excluding the popped node
@@ -53,114 +49,105 @@ def begin(gridworld, startx, starty, endx, endy):
     moves = [] # list of x,y moves that agents moves
     counter = 0
 
-    openheap.extend(checkneighbors(x, y, gridworld, i, j, g))
-    updateMentalWorld(openheap, mentalworld, x, y)
-    h = abs(x - 1) + abs(y - j)
-    closedlist.append(Node(x, y, g, h, g + h, "start"))
+    openheap.extend(checkneighbors(startx, starty, gridworld, endx, endy, g, "start"))
+    updateMentalWorld(openheap, mentalworld, startx, starty)
+    h = abs(startx - endx) + abs(starty - endy)
+    # closedlist.append(Node(x, y, g, h, g + h, "start"))
+    startNode = Node(startrow, startcolumn, 0, h, h + 0, "start")
+    endNode = Node(endrow, endcolumn, math.inf, 0, math.inf,"closed")
 
-    while counter < 15:
-        openheap = sorted(openheap, key = operator.attrgetter('f'))
-        if len(openheap) > 1:
-            nodePopped = openheap.pop(0)
-            minf = nodePopped.f
-            # find min f cost nodes
-            for x in range(len(openheap)):
-                #if there are ties for f cost
-                if openheap[x].f == minf:
-                    openMinFCost.append(openheap[x])
-                else:
-                    break
-            # Looking for tied F values and min H values
-            possibleHList = sorted(openMinFCost, key=operator.attrgetter('h'))
-            if possibleHList:
-                possibleNode = possibleHList.pop(0)
-                if possibleNode.h < nodePopped.h:
-                    nodePopped = possibleNode
-            # print("NodePopped: ", nodePopped.x,nodePopped.y, nodePopped.direction)
+    while counter < 1:
+        computepath(openheap, closedlist, mentalworld,startNode, endNode)
 
-            closedlist.append((x,y))
-            x = nodePopped.x
-            y = nodePopped.y
-            g = nodePopped.g
-            moves.append((x, y))
-            # possibly reverse x and y
-            print(moves[counter])
-        if x == endx and y == endy:
+        if len(closedlist) > 0 and closedlist[0].x == endx and closedlist[0].y == endy:
             print("found")
-            t = 0
             break
-        openMinFCost.clear()
-        openheap.extend(checkneighbors(x, y, mentalworld, i, j, g))
         counter += 1
 
 def computepath(openheap, closedlist, mentalworld, start, end):
     openMinFCost = []
-    counter = 0
+    openheap = sorted(openheap, key=operator.attrgetter('f'))
     while openheap:
         # Looking for min F values then min H values if tied F values (3)
         for it in range(len(openheap)):
             # if there are ties for f cost
-            if len(openheap) > 1 and openheap[0].f == openheap[it].f:
+            if len(openheap) > 2 and openheap[0].f == openheap[it].f:
                 openMinFCost.append(openheap[it])
             else:
                 break
-        openMinFCostn = sorted(openMinFCost, key=operator.attrgetter('h'))
+        openMinFCostn = sorted(openMinFCost, key=operator.attrgetter('g'))
+        openMinFCost = sorted(openMinFCost, key=operator.attrgetter('h'))
+        # Pop it from minFcost and pop same node from openheap
         if len(openMinFCost) > 1:
             node = openMinFCost.pop(0)
             for it in range(len(openheap)):
-                if node == openheap[it]:
+                if node.x == openheap[it].x and node.y == openheap[it].y:
                     openheap.pop(it)
                     break
         else:
             node = openheap.pop(0)
-        # Add to closelist (4)
+        # Add to closelist (4/11)
         closedlist.insert(0,node)
         if node.x == end.x and node.y == end.y:
             print("found")
             return closedlist
             break
-        # Check Neighbors(5)
-        potentialneighbors = checkneighbors(node.x, node.y, mentalworld, end.x, end.y, node.g)
+        # Check Neighbors(5/9/10)
+        potentialneighbors = checkneighbors(node.x, node.y, mentalworld, end.x, end.y, node.g, node.direction)
         # (12)
-        for i in len(potentialneighbors):
-            for j in len(openheap):
+        i = 0
+        j = 0
+        while i < len(potentialneighbors):
+            while j < len(openheap):
                 if potentialneighbors[i].x == openheap[j].x and potentialneighbors[i].y == openheap[j].y:
-                    if potentialneighbors[i].g < openheap[j]:
+                    if potentialneighbors[i].g < openheap[j].g:
                         openheap.pop(j)
+                        j -=1
                     else:
-                        potentialneighbors.pop()
-
-
-
-
+                        potentialneighbors.pop(i)
+                        i -=1
+                        break
+                j +=1
+            i += 1
+        # (13)
+        openheap.extend(potentialneighbors)
+        openMinFCost.clear()
+        openheap = sorted(openheap, key=operator.attrgetter('f'))
+        mentalworld[closedlist[0].x][closedlist[0].y] = 1
+        print(mentalworld)
+        print(closedlist[0].x, closedlist[0].y, closedlist[0].direction)
 
 
 # function to check neighbors for lowest f value(done)
 # if there's a tie then resort to h value (not done)
 # if there's a tie then random (not done)
 # if all directions are impassable (not done)   perhaps return no value
-def checkneighbors(x,y,a,i,j,g):
+def checkneighbors(x,y,a,i,j,g, direction):
     neighbors = []
     # check up
     if x != 0 and a[x-1][y] != 1:
         h = abs(x-i-1) + abs(y-j)
         f = g + h + 1
-        neighbors.append(Node(x-1,y,g+1,h,f,"up"))
+        if direction != "down":
+            neighbors.append(Node(x-1,y,g+1,h,f,"up"))
     # check left
     if y != 0 and a[x][y-1] != 1:
         h = abs(x-i) + abs(y-j-1)
         f = g + h + 1
-        neighbors.append(Node(x,y-1,g+1,h, f,"left"))
+        if direction != "right":
+            neighbors.append(Node(x,y-1,g+1,h, f,"left"))
     # check down
     if x != 9 and a[x+1][y] != 1:
         h = abs(x-i+1) + abs(y-j)
         f = g + h + 1
-        neighbors.append(Node(x+1,y,g+1,h,f,"down"))
+        if direction != "up":
+            neighbors.append(Node(x+1,y,g+1,h,f,"down"))
     #check right
     if y != 9 and a[x][y+1] != 1:
         h = abs(x-i) + abs(y-j+1)
         f = g + h + 1
-        neighbors.append(Node(x,y+1,g + 1,h,f,"right"))
+        if direction != "left":
+            neighbors.append(Node(x,y+1,g + 1,h,f,"right"))
     c = len(neighbors)
     return neighbors
 
