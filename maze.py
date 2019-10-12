@@ -38,33 +38,29 @@ def begin(gridworld, startx, starty, endx, endy):
     mentalworld = zeros([10, 10])
     mentalworld[startrow][startcolumn] = 2
     mentalworld[endrow][endcolumn] = 3
-    # t is for a truth value for while loop
-    # x y is for starting positions i j is for end position
     # intial g cost
     g = 0
-    # list of minimum f values in open list excluding the popped node
+    # list of minimum f values in open list, used to find min h cost
     openMinFCost = []
     openheap = []
     closedlist = []
-    moves = [] # list of x,y moves that agents moves
     counter = 0
 
     openheap.extend(checkneighbors(startx, starty, gridworld, endx, endy, g, "start"))
     updateMentalWorld(openheap, mentalworld, startx, starty)
     h = abs(startx - endx) + abs(starty - endy)
-    # closedlist.append(Node(x, y, g, h, g + h, "start"))
     startNode = Node(startrow, startcolumn, 0, h, h + 0, "start")
     endNode = Node(endrow, endcolumn, math.inf, 0, math.inf,"closed")
 
     while counter < 1:
-        computepath(openheap, closedlist, mentalworld,startNode, endNode)
+        computepath(openheap, closedlist, gridworld, endNode)
 
         if len(closedlist) > 0 and closedlist[0].x == endx and closedlist[0].y == endy:
             print("found")
             break
         counter += 1
 
-def computepath(openheap, closedlist, mentalworld, start, end):
+def computepath(openheap, closedlist, mentalworld, end):
     openMinFCost = []
     openheap = sorted(openheap, key=operator.attrgetter('f'))
     while openheap:
@@ -76,27 +72,28 @@ def computepath(openheap, closedlist, mentalworld, start, end):
             else:
                 break
         openMinFCostn = sorted(openMinFCost, key=operator.attrgetter('g'))
-        openMinFCost = sorted(openMinFCost, key=operator.attrgetter('h'))
-        # Pop it from minFcost and pop same node from openheap
+        # Have to look through openMinFCostn to find lowest h cost for optimization
         if len(openMinFCost) > 1:
             node = openMinFCost.pop(0)
             for it in range(len(openheap)):
                 if node.x == openheap[it].x and node.y == openheap[it].y:
+                    # Pop it from minFcost and pop same node from openheap
                     openheap.pop(it)
                     break
         else:
             node = openheap.pop(0)
-        # Add to closelist (4/11)
+        # Add  node to closelist (4/11)
         closedlist.insert(0,node)
         if node.x == end.x and node.y == end.y:
             print("found")
             return closedlist
             break
         # Check Neighbors(5/9/10)
+        # not all nodes in potentialneighbors will make it to openlist
         potentialneighbors = checkneighbors(node.x, node.y, mentalworld, end.x, end.y, node.g, node.direction)
-        # (12)
         i = 0
         j = 0
+        # Used to remove duplicate nodes from checkneighbors (12)
         while i < len(potentialneighbors):
             while j < len(openheap):
                 if potentialneighbors[i].x == openheap[j].x and potentialneighbors[i].y == openheap[j].y:
@@ -113,9 +110,11 @@ def computepath(openheap, closedlist, mentalworld, start, end):
         openheap.extend(potentialneighbors)
         openMinFCost.clear()
         openheap = sorted(openheap, key=operator.attrgetter('f'))
-        mentalworld[closedlist[0].x][closedlist[0].y] = 1
-        print(mentalworld)
-        print(closedlist[0].x, closedlist[0].y, closedlist[0].direction)
+    #If no path was found
+    if closedlist[0] != end:
+        print("no path found")
+        return closedlist
+    return closedlist
 
 
 # function to check neighbors for lowest f value(done)
