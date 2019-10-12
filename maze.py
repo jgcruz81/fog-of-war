@@ -50,6 +50,7 @@ def begin(gridworld, startx, starty, endx, endy):
     updateMentalWorld(openheap, mentalworld, startx, starty)
     h = abs(startx - endx) + abs(starty - endy)
     startNode = Node(startrow, startcolumn, 0, h, h + 0, "start")
+    closedlist.append(startNode)
     endNode = Node(endrow, endcolumn, math.inf, 0, math.inf,"closed")
 
     while counter < 1:
@@ -71,7 +72,7 @@ def computepath(openheap, closedlist, mentalworld, end):
                 openMinFCost.append(openheap[it])
             else:
                 break
-        openMinFCostn = sorted(openMinFCost, key=operator.attrgetter('g'))
+        openMinFCost = sorted(openMinFCost, key=operator.attrgetter('h'))
         # Have to look through openMinFCostn to find lowest h cost for optimization
         if len(openMinFCost) > 1:
             node = openMinFCost.pop(0)
