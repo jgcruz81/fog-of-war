@@ -62,7 +62,7 @@ ORANGE = (252, 192, 27)
 
 # Pygame visuals
 size = (800, 800)
-sq_size = 7
+sq_size = 8
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("A*")
 
@@ -215,6 +215,8 @@ def computepath(openheap, closedlist, mentalworld, end):
                 j +=1
             j = 0
             i += 1
+        i = 0
+        j = 0
         while i < len(potentialneighbors):
             while j < len(closedlist):
                 if potentialneighbors[i].x == closedlist[j].x and potentialneighbors[i].y == closedlist[j].y:
