@@ -58,6 +58,7 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 LIGHTBLUE = (168, 233, 240)
 PURPLE = (102, 0, 102)
+ORANGE = (252, 192, 27)
 
 # Pygame visuals
 size = (800, 800)
@@ -90,7 +91,6 @@ def begin(gridworld, startx, starty, endx, endy):
     # list of minimum f values in open list, used to find min h cost
     openheap = []
     closedlist = []
-    counter = 0
 
     # update the first view of the world
     openheap.extend(checkneighbors(startx, starty, gridworld, endx, endy, g, "start"))
@@ -105,19 +105,63 @@ def begin(gridworld, startx, starty, endx, endy):
 
     # INTIALIZE WORLD
     pygame.init()
-    printpath(closedlist,openheap, "WHITE")
+    printpath(closedlist, openheap, "WHITE")
     # Prints Start
     printpath(closedlist, openheap, "START")
     # Bryan's code here...
-    while counter < 1:
-        closedlist = computepath(openheap, closedlist, mentalworld, endNode)
+    while openheap:
 
-        if len(closedlist) > 0 and closedlist[0].x == endx and closedlist[0].y == endy:
-            print("found")
+        # node = the goal state
+        node = computepath(openheap, closedlist, mentalworld, endNode)
+        if len(closedlist) > 0 and closedlist[0].x != endx and closedlist[0].y != endy:
+            print("not found")
             break
-        counter += 1
+        path = followDirections(node)
+        path.reverse()
+        traveled = []
+        mentalworld[startNode.x][startNode.y] = 0
         printpath(closedlist, openheap, "WHITE")
         printpath(closedlist, openheap, "START")
+        while path:
+            currentblock = path.pop(0)
+            if gridworld[currentblock.x][currentblock.y] == 3:
+                print("done")
+                break
+
+            elif gridworld[currentblock.x][currentblock.y] != 1:
+                # update world
+                checklist = checkneighbors(currentblock.x,currentblock.y, gridworld, endNode.x, endNode.y,0,None)
+                updateMentalWorld(checklist, mentalworld, currentblock.x, currentblock.y)
+                h = abs(currentblock.x - endx) + abs(currentblock.y - endy)
+                g = 0
+                startNode = Node(currentblock.x, currentblock.y, 0, h, h + 0, "start")
+                traveled.append(startNode)
+
+
+            else:
+                currentblock = traveled[-1]
+                break
+                print("stop")
+        startposition = []
+        startposition.append(currentblock)
+        printpath(None, traveled, "ORANGE")
+        printpath(closedlist, openheap, "WHITE")
+        printpath(None,startposition, "START")
+
+        if gridworld[currentblock.x][currentblock.y] == 3:
+            print("target reached goal")
+            break
+
+        mentalworld[startrow][startcolumn] = 0
+        mentalworld[currentblock.x][currentblock.y] = 2
+        print(mentalworld)
+        path.clear()
+        openheap.clear()
+        openheap.append(startNode)
+        closedlist.clear()
+
+    printpath(closedlist, openheap, "WHITE")
+    printpath(closedlist, startposition, "START")
     exit()
 
 
@@ -148,7 +192,7 @@ def computepath(openheap, closedlist, mentalworld, end):
         closedlist.insert(0,node)
         if node.x == end.x and node.y == end.y:
             print("found")
-            printpath(closedlist, openheap, "OPEN")
+            #printpath(closedlist, openheap, "OPEN")
             printpath(closedlist, openheap, "BLUE")
             return closedlist
             break
@@ -169,6 +213,16 @@ def computepath(openheap, closedlist, mentalworld, end):
                         i -=1
                         break
                 j +=1
+            j = 0
+            i += 1
+        while i < len(potentialneighbors):
+            while j < len(closedlist):
+                if potentialneighbors[i].x == closedlist[j].x and potentialneighbors[i].y == closedlist[j].y:
+                    potentialneighbors.pop(i)
+                    i -= 1
+                    break
+                j += 1
+            j = 0
             i += 1
         # (13)
         openheap.extend(potentialneighbors)
@@ -197,10 +251,11 @@ def updateMentalWorld(neighbors, mentalworld, x, y):
         mentalworld[x + 1][y] = 1
     if 'right' in new_list and y != 9:
         mentalworld[x][y + 1] = 1
-    print(mentalworld)
+
 
 def printpath(closedlist, openheap, color):
     done = False
+    """""
     if color == "OPEN":
         while not done:
             # --- Main event loop
@@ -214,6 +269,7 @@ def printpath(closedlist, openheap, color):
                                              [openheap[i].x * sq_size + 2, openheap[i].y * sq_size + 2, sq_size - 2,
                                               sq_size - 2])
                             done = True
+    """""
     if color == "BLUE":
         while not done:
             # --- Main event loop
@@ -222,29 +278,31 @@ def printpath(closedlist, openheap, color):
                     done = True
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
+                        for i in range(len(openheap)):
+                            pygame.draw.rect(screen, LIGHTBLUE,
+                                             [openheap[i].x * sq_size + 2, openheap[i].y * sq_size + 2, sq_size - 2,
+                                              sq_size - 2])
                         for i in range(len(closedlist)):
                             pygame.draw.rect(screen, BLUE,
                                              [closedlist[i].x * sq_size + 2, closedlist[i].y * sq_size + 2, sq_size - 2,
                                               sq_size - 2])
                             done = True
+    if color == "ORANGE":
+        for i in range(len(openheap)):
+            pygame.draw.rect(screen, ORANGE,
+                             [openheap[i].x * sq_size + 2, openheap[i].y * sq_size + 2, sq_size - 2,
+                              sq_size - 2])
 
 
     if color == "BLACK":
-        while not done:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    done = True
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        for x0, x1 in enumerate(gridworld):
-                            for y0, y1 in enumerate(x1):
-                                if y1 == 1:
-                                    pygame.draw.rect(screen, BLACK,
-                                                     [x0 * sq_size + 2, y0 * sq_size + 2, sq_size - 2, sq_size - 2])
-
-                        done = True
+        for x0, x1 in enumerate(gridworld):
+            for y0, y1 in enumerate(x1):
+                if y1 == 1:
+                    pygame.draw.rect(screen, BLACK,
+                                     [x0 * sq_size + 2, y0 * sq_size + 2, sq_size - 2, sq_size - 2])
     if color == "WHITE":
         while not done:
+            # --- Main event loop
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     done = True
@@ -276,6 +334,35 @@ def exit():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
                     done = True
+def followDirections(closedlist):
+    #closedlist.reverse()
+    currentnode = closedlist.pop(0)
+    list = []
+    list.append(currentnode)
+    for x in range(len(closedlist)):
+        if currentnode.direction == "start":
+            return list
+        else:
+            for y in range(len(closedlist)):
+                #if closedlist[y].
+                if currentnode.direction == "up" and closedlist[y].x == currentnode.x + 1 and closedlist[y].y == currentnode.y:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "left" and closedlist[y].x == currentnode.x and closedlist[y].y == currentnode.y + 1:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "down" and closedlist[y].x == currentnode.x - 1 and closedlist[y].y == currentnode.y:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "right" and closedlist[y].x == currentnode.x and closedlist[y].y == currentnode.y - 1:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+    return list
+
 
 
 begin(gridworld,startrow, startcolumn, endrow, endcolumn)

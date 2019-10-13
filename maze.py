@@ -53,13 +53,46 @@ def begin(gridworld, startx, starty, endx, endy):
     closedlist.append(startNode)
     endNode = Node(endrow, endcolumn, math.inf, 0, math.inf,"closed")
 
-    while counter < 1:
-        computepath(openheap, closedlist, gridworld, endNode)
+    while openheap:
 
-        if len(closedlist) > 0 and closedlist[0].x == endx and closedlist[0].y == endy:
-            print("found")
+        # node = the goal state
+        node = computepath(openheap, closedlist, mentalworld, endNode)
+        if len(closedlist) > 0 and closedlist[0].x != endx and closedlist[0].y != endy:
+            print("not found")
             break
-        counter += 1
+        path = followDirections(node)
+        path.reverse()
+        traveled = []
+        mentalworld[startNode.x][startNode.y] = 0
+        while path:
+            currentblock = path.pop(0)
+            if gridworld[currentblock.x][currentblock.y] == 3:
+                print("done")
+                break
+
+            elif gridworld[currentblock.x][currentblock.y] != 1:
+                # update world
+                checklist = checkneighbors(currentblock.x,currentblock.y, gridworld, endNode.x, endNode.y,0,None)
+                updateMentalWorld(checklist, mentalworld, currentblock.x, currentblock.y)
+                h = abs(currentblock.x - endx) + abs(currentblock.y - endy)
+                g = 0
+                startNode = Node(currentblock.x, currentblock.y, 0, h, h + 0, "start")
+                traveled.append(startNode)
+
+
+            else:
+                currentblock = traveled[-1]
+                break
+                print("stop")
+        if gridworld[currentblock.x][currentblock.y] == 3:
+            print("target reached goal")
+            break
+        mentalworld[startrow][startcolumn] = 0
+        mentalworld[currentblock.x][currentblock.y] = 2
+        path.clear()
+        openheap.clear()
+        openheap.append(startNode)
+        closedlist.clear()
 
 def computepath(openheap, closedlist, mentalworld, end):
     openMinFCost = []
@@ -106,11 +139,25 @@ def computepath(openheap, closedlist, mentalworld, end):
                         i -=1
                         break
                 j +=1
+            j = 0
+            i += 1
+        i = 0
+        j = 0
+        while i < len(potentialneighbors):
+            while j < len(closedlist):
+                if potentialneighbors[i].x == closedlist[j].x and potentialneighbors[i].y == closedlist[j].y:
+                    potentialneighbors.pop(i)
+                    i -= 1
+                    break
+                j += 1
+            j = 0
             i += 1
         # (13)
         openheap.extend(potentialneighbors)
         openMinFCost.clear()
         openheap = sorted(openheap, key=operator.attrgetter('f'))
+
+
     #If no path was found
     if closedlist[0] != end:
         print("no path found")
@@ -118,10 +165,12 @@ def computepath(openheap, closedlist, mentalworld, end):
     return closedlist
 
 
-# function to check neighbors for lowest f value(done)
-# if there's a tie then resort to h value (not done)
-# if there's a tie then random (not done)
-# if all directions are impassable (not done)   perhaps return no value
+# Checking node's neighbors
+# node.x = x    node.y = y
+# a is world that you are using
+# end.i = i     end.y = y
+# g is node.g and direction is used to not append the direction you came from
+
 def checkneighbors(x,y,a,i,j,g, direction):
     neighbors = []
     # check up
@@ -152,6 +201,7 @@ def checkneighbors(x,y,a,i,j,g, direction):
     return neighbors
 
 # this method populates the mental world with 1s
+#
 def updateMentalWorld(neighbors, mentalworld, x, y):
     seen = ["up", "down", "left", "right"]
     encompass = []
@@ -159,7 +209,6 @@ def updateMentalWorld(neighbors, mentalworld, x, y):
         encompass.append(neighbors[i].direction)
 
     new_list = list(set(seen) - set(encompass))
-    print(new_list)
     if 'up' in new_list and x != 0:
         mentalworld[x - 1][y] = 1
     if 'left' in new_list and y != 0:
@@ -168,8 +217,37 @@ def updateMentalWorld(neighbors, mentalworld, x, y):
         mentalworld[x + 1][y] = 1
     if 'right' in new_list and y != 9:
         mentalworld[x][y + 1] = 1
-    print(mentalworld)
 
+def followDirections(closedlist):
+    #closedlist.reverse()
+    currentnode = closedlist.pop(0)
+    list = []
+    list.append(currentnode)
+    for x in range(len(closedlist)):
+        if currentnode.direction == "start":
+            return list
+        else:
+            for y in range(len(closedlist)):
+                #if closedlist[y].
+                if currentnode.direction == "up" and closedlist[y].x == currentnode.x + 1 and closedlist[y].y == currentnode.y:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "left" and closedlist[y].x == currentnode.x and closedlist[y].y == currentnode.y + 1:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "down" and closedlist[y].x == currentnode.x - 1 and closedlist[y].y == currentnode.y:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+                if currentnode.direction == "right" and closedlist[y].x == currentnode.x and closedlist[y].y == currentnode.y - 1:
+                    currentnode = closedlist[y]
+                    list.append(closedlist.pop(y))
+                    break
+
+
+    return list
 begin(gridworld,startrow, startcolumn, endrow, endcolumn)
 
 
