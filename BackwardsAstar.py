@@ -3,6 +3,8 @@ import math
 from numpy import zeros
 import random
 import operator
+import sys
+sys.setrecursionlimit(10000)
 
 # Node class that identifies x,y position and g,h,f values. Direction is to indicate parent
 class Node:
@@ -14,6 +16,12 @@ class Node:
         self.f = f
         self.direction = direction
         return
+class Nod:
+    def __init__(self, data, visited):
+        self.data = data
+        self.visited = visited
+
+
 # Checking node's neighbors
 # node.x = x    node.y = y
 # a is world that you are using
@@ -34,13 +42,13 @@ def checkneighbors(x,y,a,i,j,g, direction):
         if direction != "right":
             neighbors.append(Node(x,y-1,g+1,h, f,"left"))
     # check down
-    if x != 99 and a[x+1][y] != 1:
+    if x != 100 and a[x+1][y] != 1:
         h = abs(x-i+1) + abs(y-j)
         f = g + h + 1
         if direction != "up":
             neighbors.append(Node(x+1,y,g+1,h,f,"down"))
     #check right
-    if y != 99 and a[x][y+1] != 1:
+    if y != 100 and a[x][y+1] != 1:
         h = abs(x-i) + abs(y-j+1)
         f = g + h + 1
         if direction != "left":
@@ -61,29 +69,18 @@ PURPLE = (102, 0, 102)
 ORANGE = (252, 192, 27)
 
 # Pygame visuals
-size = (800, 800)
+size = (808, 808)
 sq_size = 8
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Backwards A*")
 
 
-# GridWorld Matrix
-endrow = random.randint(70,99)
-endcolumn = random.randint(70,99)
-startrow = random.randint(0,30)
-startcolumn = random.randint(0,30)
-gridworld = zeros([100,100])
-for x in range(100):
-    for y in range(20):
-        wall = random.randint(0, 99)
-        gridworld[x][wall] = 1
-gridworld[endrow][endcolumn] = 3
-gridworld[startrow][startcolumn] = 2
+
 
 
 def begin(gridworld, startx, starty, endx, endy):
     # intialize mental world
-    mentalworld = zeros([100, 100])
+    mentalworld = zeros([101, 101])
     mentalworld[startrow][startcolumn] = 2
     mentalworld[endrow][endcolumn] = 3
     # intial g cost
@@ -253,9 +250,9 @@ def updateMentalWorld(neighbors, mentalworld, x, y):
         mentalworld[x - 1][y] = 1
     if 'left' in new_list and y != 0:
         mentalworld[x][y - 1] = 1
-    if 'down' in new_list and x != 99:
+    if 'down' in new_list and x != 100:
         mentalworld[x + 1][y] = 1
-    if 'right' in new_list and y != 99:
+    if 'right' in new_list and y != 100:
         mentalworld[x][y + 1] = 1
 
 # Colors in the path
@@ -315,9 +312,9 @@ def printpath(closedlist, openheap, color):
                     screen.fill(WHITE)
 
                     # Prints Grid
-                    for x in range(0, 100):
-                        pygame.draw.line(screen, BLACK, [0, x * sq_size], [800, x * sq_size], 2)
-                        pygame.draw.line(screen, BLACK, [x * sq_size, 0], [x * sq_size, 800], 2)
+                    for x in range(0, 101):
+                        pygame.draw.line(screen, BLACK, [0, x * sq_size], [808, x * sq_size], 2)
+                        pygame.draw.line(screen, BLACK, [x * sq_size, 0], [x * sq_size, 808], 2)
                     # Prints blocked squares
                     printpath(closedlist, openheap, "BLACK")
                     pygame.draw.rect(screen, RED,
@@ -366,6 +363,73 @@ def followDirections(closedlist):
                     break
     return list
 
+def dfs(nodeMatrix, xcoord, ycoord):
+    nodeMatrix[xcoord][ycoord].visited = True
+    direction = random.randint(1, 4)
+    counter = 0
+    while counter < 4:
+        if direction % 4 == 0:  # go up
+            if ycoord - 2 >= 0:  # check if in bounds
+                if (not nodeMatrix[xcoord][ycoord - 2].visited):  # check if visited
+                    intMatrix[xcoord][ycoord - 1] = 0  # breaks the wall
+                    dfs(nodeMatrix, xcoord, ycoord - 2)
+        elif direction % 4 == 1:  # go right
+            if xcoord + 2 <= x:  # check if in bounds
+                if (not nodeMatrix[xcoord + 2][ycoord].visited):  # check if visited
+                    intMatrix[xcoord + 1][ycoord] = 0  # breaks the wall
+                    dfs(nodeMatrix, xcoord + 2, ycoord)
+        elif direction % 4 == 2:  # go down
+            if ycoord + 2 <= x:  # check if in bounds
+                if (not nodeMatrix[xcoord][ycoord + 2].visited):  # check if visited
+                    intMatrix[xcoord][ycoord + 1] = 0  # breaks the wall
+                    dfs(nodeMatrix, xcoord, ycoord + 2)
+        elif direction % 4 == 3:  # go right
+            if xcoord - 2 >= 0:  # check if in bounds
+                if (not nodeMatrix[xcoord - 2][ycoord].visited):  # check if visited
+                    intMatrix[xcoord - 1][ycoord] = 0  # breaks the wall
+                    dfs(nodeMatrix, xcoord - 2, ycoord)
+        direction = direction + 1
+        counter = counter + 1
 
 
+x= 101
+intMatrix = zeros([x, x])
+nodeMatrix = [[Nod(0, False) for i in range(x)] for j in range(x)]
+for r in range(x):
+    for c in range(x):
+        nodeMatrix[r][c] = Nod(0, False)
+# creates tic-tac-toe pattern of walls, to be broken down
+for row in range(1, x, 2):
+    for col in range(x):
+        intMatrix[row][col] = 1
+        nodeMatrix[row][col] = Nod(1, True)
+for col in range(1, x, 2):
+    for row in range(x):
+        intMatrix[row][col] = 1
+        nodeMatrix[row][col] = Nod(1, True)
+# GridWorld Matrix
+
+endrow = random.randint(70,99)
+endcolumn = random.randint(70,99)
+startrow = random.randint(0,30)
+startcolumn = random.randint(0,30)
+gridworld = zeros([101,101])
+for x in range(101):
+    for y in range(20):
+        wall = random.randint(0, 99)
+        gridworld[x][wall] = 1
+gridworld[endrow][endcolumn] = 3
+gridworld[startrow][startcolumn] = 2
+"""
+#
+dfs(nodeMatrix, 0, 0)
+endrow = random.randint(70,99)
+endcolumn = random.randint(70,99)
+startrow = random.randint(0,30)
+startcolumn = random.randint(0,30)
+gridworld = intMatrix
+gridworld[endrow][endcolumn] = 3
+gridworld[startrow][startcolumn] = 2
+"""
 begin(gridworld,startrow, startcolumn, endrow, endcolumn)
+
