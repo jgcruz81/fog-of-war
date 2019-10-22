@@ -353,7 +353,9 @@ def followDirections(closedlist):
                     list.append(closedlist.pop(y))
                     break
     return list
-def dfs(nodeMatrix, xcoord, ycoord):
+
+#now contains 'intMatrix' to be modified, and size of world: 'x'
+def dfs(nodeMatrix, intMatrix, xcoord, ycoord,x):
     nodeMatrix[xcoord][ycoord].visited = True
     direction = random.randint(1, 4)
     counter = 0
@@ -362,25 +364,24 @@ def dfs(nodeMatrix, xcoord, ycoord):
             if ycoord - 2 >= 0:  # check if in bounds
                 if (not nodeMatrix[xcoord][ycoord - 2].visited):  # check if visited
                     intMatrix[xcoord][ycoord - 1] = 0  # breaks the wall
-                    dfs(nodeMatrix, xcoord, ycoord - 2)
+                    dfs(nodeMatrix, intMatrix,xcoord, ycoord - 2,x)
         elif direction % 4 == 1:  # go right
             if xcoord + 2 <= x:  # check if in bounds
                 if (not nodeMatrix[xcoord + 2][ycoord].visited):  # check if visited
                     intMatrix[xcoord + 1][ycoord] = 0  # breaks the wall
-                    dfs(nodeMatrix, xcoord + 2, ycoord)
+                    dfs(nodeMatrix, intMatrix, xcoord + 2, ycoord,x)
         elif direction % 4 == 2:  # go down
             if ycoord + 2 <= x:  # check if in bounds
                 if (not nodeMatrix[xcoord][ycoord + 2].visited):  # check if visited
                     intMatrix[xcoord][ycoord + 1] = 0  # breaks the wall
-                    dfs(nodeMatrix, xcoord, ycoord + 2)
+                    dfs(nodeMatrix, intMatrix, xcoord, ycoord + 2,x)
         elif direction % 4 == 3:  # go right
             if xcoord - 2 >= 0:  # check if in bounds
                 if (not nodeMatrix[xcoord - 2][ycoord].visited):  # check if visited
                     intMatrix[xcoord - 1][ycoord] = 0  # breaks the wall
-                    dfs(nodeMatrix, xcoord - 2, ycoord)
+                    dfs(nodeMatrix, intMatrix, xcoord - 2, ycoord,x)
         direction = direction + 1
         counter = counter + 1
-
 x= 101
 intMatrix = zeros([x, x])
 nodeMatrix = [[Nod(0, False) for i in range(x)] for j in range(x)]
@@ -396,8 +397,43 @@ for col in range(1, x, 2):
     for row in range(x):
         intMatrix[row][col] = 1
         nodeMatrix[row][col] = Nod(1, True)
-# GridWorld Matrix
+def storeMat():
+ x = 101
+ mazeList = []
+    nodeMatrix = [[Node(0, False) for i in range(x)] for j in range(x)]
+    y = 0
+    # run 50 times to store 50 diff matrices
+    while y < 50:
 
+        intMatrix = zeros([x, x])
+        # modifies nodeMatrix
+        for r in range(x):
+            for c in range(x):
+                nodeMatrix[r][c] = Node(0, False)
+        # creates tic-tac-toe pattern of walls, to be broken down
+        for row in range(1, x, 2):
+            for col in range(x):
+                intMatrix[row][col] = 1
+                nodeMatrix[row][col] = Node(1, True)
+        for col in range(1, x, 2):
+            for row in range(x):
+                intMatrix[row][col] = 1
+                nodeMatrix[row][col] = Node(1, True)
+        
+        # makes 'xcoord' and 'ycoord' a random positive int between 0 and 'x', inclusive, unless 'x' is negative
+        xcoord = random.randrange(0,x,2)
+        ycoord = random.randrange(0,x,2)
+        dfs(nodeMatrix,intMatrix,xcoord,ycoord,x)
+        mazeList.append(intMatrix)
+        y+=1
+
+    #prints the maze, but currently commented out
+    counter = 0
+    while counter<50:
+        #print(mazeList[counter])
+        counter+=1
+# GridWorld Matrix
+main() # stores the 50 matrices in 'mazeList'
 endrow = random.randint(70,99)
 endcolumn = random.randint(70,99)
 startrow = random.randint(0,30)
@@ -410,7 +446,7 @@ for x in range(101):
 gridworld[endrow][endcolumn] = 3
 gridworld[startrow][startcolumn] = 2
 """
-dfs(nodeMatrix, 0, 0)
+dfs(nodeMatrix, intMatrix, random.randrange(0,x,2), random.randrange(0,x,2),x)
 endrow = random.randint(70,99)
 endcolumn = random.randint(70,99)
 startrow = random.randint(0,30)
