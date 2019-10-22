@@ -354,6 +354,8 @@ def followDirections(closedlist):
                     break
     return list
 
+
+#------------------------------------------------
 #now contains 'intMatrix' to be modified, and size of world: 'x'
 def dfs(nodeMatrix, intMatrix, xcoord, ycoord,x):
     nodeMatrix[xcoord][ycoord].visited = True
@@ -397,7 +399,8 @@ for col in range(1, x, 2):
     for row in range(x):
         intMatrix[row][col] = 1
         nodeMatrix[row][col] = Nod(1, True)
-def storeMat():
+        
+def main():
  x = 101
  mazeList = []
     nodeMatrix = [[Node(0, False) for i in range(x)] for j in range(x)]
@@ -434,6 +437,11 @@ def storeMat():
         counter+=1
 # GridWorld Matrix
 main() # stores the 50 matrices in 'mazeList'
+#----------------------------------------------
+
+
+
+
 endrow = random.randint(70,99)
 endcolumn = random.randint(70,99)
 startrow = random.randint(0,30)
